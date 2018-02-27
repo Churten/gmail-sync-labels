@@ -156,11 +156,14 @@ class MaildirDatabase(mailbox.Maildir):
             for messageid in messageids:
                 if messageid in self.__message_id_to_key.keys():
                     # duplicated
+                    if config.DEBUG:
+                        print('duplciate message id %s in %s and %s' % (messageid, key, self.__message_id_to_key[messageid]))
                     self.__duplicated_message_ids.add(messageid)
                     del self.__message_id_to_key[messageid]
                 if messageid not in self.__duplicated_message_ids:
                     self.__message_id_to_key[messageid] = key
             if len(messageids) == 0:
+                print('message without id %s' % (key,))
                 self.__message_keys_without_id.add(key)
             elif config.DEBUG and len(messageids) > 1:
                 print('Message with multiple IDs: %s' % key)
