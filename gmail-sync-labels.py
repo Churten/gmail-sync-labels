@@ -13,6 +13,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import importlib
 import importlib.machinery
 
+# just to force shelve to have the right one
+# ndbm is unrelaible for large maildirs
+import dbm.gnu
+
 import email.header
 import imaplib
 import mailbox
@@ -26,7 +30,7 @@ import sys
 # prep global for later init
 config = None
 
-DATA_VERSION = 4
+DATA_VERSION = 5
 
 # utility helper
 # GMail has started returning many headers with utf-8 encoding
@@ -117,7 +121,7 @@ class MaildirDatabase(mailbox.Maildir):
         mailbox.Maildir.__init__(self, path)
         self.lock()
 
-        self.__message_ids = shelve.open(os.path.join(path, 'gmail-sync-labels'))
+        self.__message_ids = shelve.open(os.path.join(path, 'gmail-sync-labels.db'))
         if not '__VERSION' in self.__message_ids.keys() or self.__message_ids['__VERSION'] != DATA_VERSION:
             print('New database or new software version, re-indexing')
             # calling .clear() is very slow on a full database
@@ -126,7 +130,7 @@ class MaildirDatabase(mailbox.Maildir):
             #self.__message_ids.clear()
             self.__message_ids.close()
             #os.unlink(os.path.join(path, 'gmail-sync-labels'))
-            self.__message_ids = shelve.open(os.path.join(path, 'gmail-sync-labels'), flag='n')
+            self.__message_ids = shelve.open(os.path.join(path, 'gmail-sync-labels.db'), flag='n')
             self.__message_ids['__VERSION'] = DATA_VERSION
         # don't need this data yet
         #self.cache_message_info()
@@ -156,11 +160,14 @@ class MaildirDatabase(mailbox.Maildir):
             for messageid in messageids:
                 if messageid in self.__message_id_to_key.keys():
                     # duplicated
+                    if config.DEBUG:
+                        print('duplciate message id %s in %s and %s' % (messageid, key, self.__message_id_to_key[messageid]))
                     self.__duplicated_message_ids.add(messageid)
                     del self.__message_id_to_key[messageid]
                 if messageid not in self.__duplicated_message_ids:
                     self.__message_id_to_key[messageid] = key
             if len(messageids) == 0:
+                print('message without id %s' % (key,))
                 self.__message_keys_without_id.add(key)
             elif config.DEBUG and len(messageids) > 1:
                 print('Message with multiple IDs: %s' % key)

@@ -35,3 +35,14 @@ keying by message ID.  Note that this tool is not well tested.
     cp config.py.template config_new.py
     edit config_old.py config_new.py
     python3 gmail-restore-labels.py config_old config_new
+
+Similar Projects
+================
+
+1. [gmail-notmuch](http://git.zx2c4.com/gmail-notmuch/)
+   <br/>This project used to have NotMuch support, but it was removed for lack of maintenance.
+
+See Also
+=============
+* https://github.com/hiciu/gmail-sync-labels
+* https://github.com/fastcat/gmail-sync-labels
