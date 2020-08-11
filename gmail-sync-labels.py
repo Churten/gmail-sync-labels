@@ -132,6 +132,8 @@ class MaildirDatabase(mailbox.Maildir):
             #os.unlink(os.path.join(path, 'gmail-sync-labels'))
             self.__message_ids = shelve.open(os.path.join(path, 'gmail-sync-labels.db'), flag='n')
             self.__message_ids['__VERSION'] = DATA_VERSION
+        elif config.DEBUG:
+            print('Opened DB with version %d, %d entries' % (self.__message_ids['__VERSION'], len(self.__message_ids)-1))
         # don't need this data yet
         #self.cache_message_info()
     
@@ -161,16 +163,13 @@ class MaildirDatabase(mailbox.Maildir):
                 if messageid in self.__message_id_to_key.keys():
                     # duplicated
                     if config.DEBUG:
-                        print('duplciate message id %s in %s and %s' % (messageid, key, self.__message_id_to_key[messageid]))
+                        print('duplicate message id %s in %s and %s' % (messageid, key, self.__message_id_to_key[messageid]))
                     self.__duplicated_message_ids.add(messageid)
                     del self.__message_id_to_key[messageid]
                 if messageid not in self.__duplicated_message_ids:
                     self.__message_id_to_key[messageid] = key
             if len(messageids) == 0:
-                print('message without id %s' % (key,))
                 self.__message_keys_without_id.add(key)
-            elif config.DEBUG and len(messageids) > 1:
-                print('Message with multiple IDs: %s' % key)
         if config.DEBUG or config.MESSAGE_DETAILS:
             print('cached index: %d good message ids, %d duplicated ids, %d missing ids' %
                 (len(self.__message_id_to_key), len(self.__duplicated_message_ids),
@@ -237,15 +236,18 @@ class MaildirDatabase(mailbox.Maildir):
                     vv = header_to_string(v)
                     gmailid = vv
             
+            # printing these here instead of in cache_message_info means they only get
+            # printed the first time we see the message
             if len(messageids) == 0:
+                print('Message without id: %s' % (key,))
                 nomsgid += 1
-                print('No Message-ID for %s' % (key), file=sys.stderr)
+            elif config.DEBUG and len(messageids) > 1:
+                print('Message with multiple IDs: %s' % key)
             if gmailid == None:
-                print('No X-GMAIL-MSGID for %s' % (key), file=sys.stderr)
+                print('Message without gmail id: %s' % (key,))
                 nogmailid += 1
             
-            if len(messageids) > 0 and gmailid != None:
-                self.__message_ids[key] = { 'Message-ID': messageids, 'X-GMAIL-MSGID': gmailid }
+            self.__message_ids[key] = { 'Message-ID': messageids, 'X-GMAIL-MSGID': gmailid }
         
         # remove any deleted messages from index
         for key in list(self.__message_ids.keys() - seenkeys):
@@ -300,7 +302,7 @@ class MaildirDatabase(mailbox.Maildir):
         
         return 1
 
-#FIXME: refactor to separate class o share code
+#FIXME: refactor to separate class to share code
 def download_labels(gmail, total):
     """
     response here is ugly:
