@@ -232,12 +232,13 @@ class MaildirDatabase(mailbox.Maildir):
             
             if len(messageids) == 0:
                 nomsgid += 1
+                print('No Message-ID for %s' % (key), file=sys.stderr)
             if gmailid == None:
+                print('No X-GMAIL-MSGID for %s' % (key), file=sys.stderr)
                 nogmailid += 1
             
-            # gmailid should always be present
-            assert(gmailid != None)
-            self.__message_ids[key] = { 'Message-ID': messageids, 'X-GMAIL-MSGID': gmailid }
+            if len(messageids) > 0 and gmailid != None:
+                self.__message_ids[key] = { 'Message-ID': messageids, 'X-GMAIL-MSGID': gmailid }
         
         # remove any deleted messages from index
         for key in list(self.__message_ids.keys() - seenkeys):
